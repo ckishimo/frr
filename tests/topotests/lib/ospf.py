@@ -107,6 +107,32 @@ def __create_ospf_global(tgen, input_dict, router, build=False, load_config=True
     * `load_config` : Loading the config to router this is set as True.
     * `ospf` : either 'ospf' or 'ospf6'
 
+    Usage
+    -----
+    input_dict = {
+    "routers": {
+        "r1": {
+            "links": {
+                "r3": {
+                    "ipv6": "2013:13::1/64",
+                     "ospf6": {
+                        "hello_interval": 1,
+                        "dead_interval": 4,
+                        "network": "point-to-point"
+                    }
+               }
+            },
+            "ospf6": {
+                "router_id": "1.1.1.1",
+                "neighbors": {
+                    "r3": {
+                        "area": "1.1.1.1"
+                    }
+                }
+            }
+        }
+    }
+
     Returns
     -------
     True or False
@@ -174,6 +200,18 @@ def __create_ospf_global(tgen, input_dict, router, build=False, load_config=True
                     if del_action:
                         cmd = "no {}".format(cmd)
                     config_data.append(cmd)
+
+        # area interface information for ospf6d only
+        if ospf == 'ospf6':
+            area_iface = ospf_data.setdefault("neighbors", {})
+            if area_iface:
+                for neighbor in area_iface:
+                    if 'area' in area_iface[neighbor]:
+                        iface = input_dict[router]['links'][neighbor]['interface']
+                        cmd = "interface {} area {}".format(iface, area_iface[neighbor]['area'])
+                        if area_iface[neighbor].setdefault("delete", False):
+                            cmd = "no {}".format(cmd)
+                        config_data.append(cmd)
 
         # summary information
         summary_data = ospf_data.setdefault("summary-address", {})
